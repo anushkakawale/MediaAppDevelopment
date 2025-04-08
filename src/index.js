@@ -39,32 +39,29 @@ const initializeServices = async () => {
         // Continue execution as this is not critical
       }
     }
-
-    // Initialize WebSocket connection with timeout
+    // Initialize WebSocket with better error handling and longer timeout
     try {
       const wsTimeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('WebSocket connection timeout')), 5000)
+        setTimeout(() => reject(new Error('WebSocket connection timeout')), 10000)
       );
       await Promise.race([connectToWebSocket(), wsTimeout]);
       console.log('WebSocket connection established');
     } catch (wsError) {
-      console.warn('WebSocket connection skipped or failed:', wsError.message);
-      // Continue execution as the app can work without WebSocket
+      console.warn('WebSocket connection failed:', wsError.message);
+      // Don't throw error here to allow app to continue loading
+      // The ConnectionStatusOverlay component will handle reconnection
     }
-
-    // Initialize real-time services
     try {
       await initializeRealTimeServices();
       console.log('Real-time services initialized');
     } catch (rtError) {
       console.warn('Real-time services initialization failed:', rtError);
-      // Continue execution as the app can work with degraded real-time features
     }
 
     console.log('All services initialized successfully');
     return true;
   } catch (error) {
     console.error('Critical error during service initialization:', error);
-    throw error; // Re-throw critical errors to handle at app level
+    throw error; 
   }
 };

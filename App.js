@@ -27,9 +27,7 @@ const App = () => {
   useEffect(() => {
     const initApp = async () => {
       try {
-        setIsInitialized(false);
-        setError(null);
-
+        // Load saved navigation state first
         const savedState = await AsyncStorage.getItem('navigationState');
         if (savedState) {
           try {
@@ -37,20 +35,20 @@ const App = () => {
             setInitialState(parsedState);
           } catch (parseError) {
             console.warn('Failed to parse navigation state:', parseError);
+            // Continue without saved state
           }
         }
 
-        const initPromise = initializeServices();
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Service initialization timed out')), 15000)
-        );
+        // Initialize services with proper error handling
+        await initializeServices().catch(error => {
+          throw new Error(`Service initialization failed: ${error.message}`);
+        });
 
-        await Promise.race([initPromise, timeoutPromise]);
         setIsInitialized(true);
       } catch (err) {
         console.error('App initialization error:', err);
         setError(err.message || 'Failed to initialize app');
-        setIsInitialized(true);
+        setIsInitialized(true); // Still set to true to show error UI
       }
     };
 

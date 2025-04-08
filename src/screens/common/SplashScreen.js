@@ -1,48 +1,36 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Image, Animated, Easing, Text, ActivityIndicator } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, Image, Animated, Easing } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { getFirebaseAuth } from '../../services/firebase';
-import { initializeServices } from '../../../src';
 
 const SplashScreen = () => {
   const navigation = useNavigation();
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const [isInitializing, setIsInitializing] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const initialize = async () => {
-      try {
-        await initializeServices();
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 500,
-          easing: Easing.ease,
-          useNativeDriver: true,
-        }).start();
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 1000,
+      easing: Easing.ease,
+      useNativeDriver: true,
+    }).start();
 
-        const auth = getFirebaseAuth();
-        const user = auth.currentUser;
+    const auth = getFirebaseAuth();
+    const user = auth.currentUser;
 
-        setTimeout(() => {
-          if (user) {
-            if (user.emailVerified) {
-              navigation.navigate('Main');
-            } else {
-              navigation.navigate('EmailVerification', { email: user.email || '' });
-            }
-          } else {
-            navigation.navigate('Auth');
-          }
-        }, 1500);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setIsInitializing(false);
+    const timer = setTimeout(() => {
+      if (user) {
+        if (user.emailVerified) {
+          navigation.replace('Main');
+        } else {
+          navigation.replace('EmailVerification', { email: user.email || '' });
+        }
+      } else {
+        navigation.replace('Auth');
       }
-    };
+    }, 2000);
 
-    initialize();
+    return () => clearTimeout(timer);
   }, [navigation, fadeAnim]);
 
   if (isInitializing) {

@@ -1,8 +1,43 @@
 import io from 'socket.io-client';
 import { Platform } from 'react-native';
 
-const CHAT_WEBSOCKET_URL = __DEV__ ? (Platform.OS === 'android' ? 'ws://10.0.2.2:3001' : 'ws://localhost:3001') : 'wss://your-production-chat-url';
-const NOTIFICATION_WEBSOCKET_URL = __DEV__ ? (Platform.OS === 'android' ? 'ws://10.0.2.2:3002' : 'ws://localhost:3002') : 'wss://your-production-notification-url';
+// Get the development server IP address for Expo and React Native CLI
+const getDevelopmentServerIP = () => {
+  if (Platform.OS === 'android') {
+    // Android Emulator uses 10.0.2.2, real device uses local network IP
+    return __DEV__ ? '10.0.2.2' : 'localhost';
+  }
+  // iOS uses localhost for both simulator and real device in development
+  return 'localhost';
+};
+
+// Helper function to validate WebSocket URL
+const validateWebSocketURL = (url) => {
+  if (!url) {
+    throw new Error('WebSocket URL is undefined');
+  }
+  try {
+    new URL(url);
+  } catch (error) {
+    throw new Error(`Invalid WebSocket URL: ${url}`);
+  }
+};
+
+const DEV_SERVER_IP = getDevelopmentServerIP();
+
+const CHAT_WEBSOCKET_URL = __DEV__ 
+  ? `ws://${DEV_SERVER_IP}:3001`
+  : 'wss://your-production-chat-url';
+
+// Add connection status tracking
+let isConnecting = false;
+let connectionRetryCount = 0;
+const MAX_CONNECTION_RETRIES = 3;
+const CONNECTION_RETRY_DELAY = 2000; // 2 seconds
+
+const NOTIFICATION_WEBSOCKET_URL = __DEV__
+  ? `ws://${DEV_SERVER_IP}:3002`
+  : 'wss://your-production-notification-url';
 
 const SKIP_WEBSOCKET_IN_DEV = false;
 
@@ -16,8 +51,24 @@ const listeners = new Map();
 const sockets = new Map();
 
 const createSocketConnection = (url, type) => {
-  return new Promise((resolve, reject) => {
-    // Skip WebSocket connection in development if configured
+  return new Promise(async (resolve, reject) => {
+    if (isConnecting) {
+      console.log(`${type} WebSocket connection already in progress...`);
+      reject(new Error('Connection already in progress'));
+      return;
+    }
+    isConnecting = true;
+    try {
+      validateWebSocketURL(url);
+    } catch (error) {
+      console.error(`Invalid ${type} WebSocket URL:`, error);
+      reject(error);
+      return;
+    }
+    // Add timeout for connection attempts
+    const connectionTimeout = setTimeout(() => {
+      reject(new Error(`${type} WebSocket connection timeout after 10 seconds`));
+    }, 10000);
     if (__DEV__ && SKIP_WEBSOCKET_IN_DEV) {
       console.log(`Skipping ${type} WebSocket connection in development mode`);
       resolve(null);
@@ -31,10 +82,11 @@ const createSocketConnection = (url, type) => {
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionAttempts: 10,
-        timeout: 10000 // 10 second timeout
+        timeout: 10000 
       });
 
       socket.on('connect', () => {
+        clearTimeout(connectionTimeout);
         console.log(`${type} WebSocket connected successfully. Socket ID:`, socket.id);
         console.log('Connection details:', {
           url,
@@ -46,7 +98,8 @@ const createSocketConnection = (url, type) => {
         resolve(socket);
       }),
 
-      socket.on('connect_error', (error) => {
+      socket.on('connect_error', async (error) => {
+        clearTimeout(connectionTimeout);
         console.error('WebSocket connection error:', error.message);
         console.log('Connection attempt details:', {
           url,
@@ -57,7 +110,23 @@ const createSocketConnection = (url, type) => {
           id: socket?.id,
           error: error.stack
         });
-        reject(error);
+
+        if (connectionRetryCount < MAX_CONNECTION_RETRIES) {
+          connectionRetryCount++;
+          console.log(`Retrying connection (${connectionRetryCount}/${MAX_CONNECTION_RETRIES})...`);
+          await new Promise(resolve => setTimeout(resolve, CONNECTION_RETRY_DELAY));
+          isConnecting = false;
+          try {
+            const newSocket = await createSocketConnection(url, type);
+            resolve(newSocket);
+          } catch (retryError) {
+            reject(retryError);
+          }
+        } else {
+          console.error(`${type} WebSocket connection failed after ${MAX_CONNECTION_RETRIES} attempts`);
+          isConnecting = false;
+          reject(error);
+        }
       });
 
       socket.io.on('error', (error) => {
