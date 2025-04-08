@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "792343513287",
+    "firebase_url": "https://mediafeedappdevelopment-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "mediafeedappdevelopment",
+    "storage_bucket": "mediafeedappdevelopment.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:792343513287:android:873e970b2630952bed96e2",
+        "android_client_info": {
+          "package_name": "com.mediafeedappdevelopment"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "792343513287-34c0l3ph2vbtd7u7huo0gu13ouhp34vp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-PbdtSUGVoGkGXxROxNbKtgIk4pJU0Iw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "792343513287-34c0l3ph2vbtd7u7huo0gu13ouhp34vp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
