@@ -51,24 +51,46 @@ const listeners = new Map();
 const sockets = new Map();
 
 const createSocketConnection = (url, type) => {
-  return new Promise(async (resolve, reject) => {
+  return new Promise((resolve, reject) => {
+    // Don't block app initialization if WebSocket fails
+    if (__DEV__ && SKIP_WEBSOCKET_IN_DEV) {
+      console.log(`Skipping ${type} WebSocket connection in development mode`);
+      resolve(null);
+      return;
+    }
+
     if (isConnecting) {
       console.log(`${type} WebSocket connection already in progress...`);
-      reject(new Error('Connection already in progress'));
+      resolve(null); // Don't block, just return
       return;
     }
+
     isConnecting = true;
+    connectionRetryCount = 0;
+
     try {
       validateWebSocketURL(url);
+      console.log(`Attempting to connect to ${type} WebSocket at ${url}`);
     } catch (error) {
+      isConnecting = false;
       console.error(`Invalid ${type} WebSocket URL:`, error);
-      reject(error);
+      resolve(null); // Don't block app initialization
       return;
     }
-    // Add timeout for connection attempts
+    // Add timeout for connection attempts with cleanup
     const connectionTimeout = setTimeout(() => {
+      isConnecting = false;
       reject(new Error(`${type} WebSocket connection timeout after 10 seconds`));
     }, 10000);
+
+    // Skip WebSocket in development if configured
+    if (__DEV__ && SKIP_WEBSOCKET_IN_DEV) {
+      clearTimeout(connectionTimeout);
+      console.log(`Skipping ${type} WebSocket connection in development mode`);
+      isConnecting = false;
+      resolve(null);
+      return;
+    }
     if (__DEV__ && SKIP_WEBSOCKET_IN_DEV) {
       console.log(`Skipping ${type} WebSocket connection in development mode`);
       resolve(null);
@@ -96,10 +118,11 @@ const createSocketConnection = (url, type) => {
           id: socket.id
         });
         resolve(socket);
-      }),
+      });
 
       socket.on('connect_error', async (error) => {
         clearTimeout(connectionTimeout);
+        isConnecting = false;
         console.error('WebSocket connection error:', error.message);
         console.log('Connection attempt details:', {
           url,
@@ -141,6 +164,7 @@ const createSocketConnection = (url, type) => {
 
       socket.on('disconnect', (reason) => {
         console.log('WebSocket disconnected. Reason:', reason);
+        isConnecting = false;
         console.log('Attempting to reconnect...');
       });
 

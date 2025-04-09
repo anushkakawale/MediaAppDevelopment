@@ -21,7 +21,16 @@ const DrawerNavigator = () => {
         swipeEnabled: dimensions.width < 768,
         drawerStyle: styles.drawerStyle,
         overlayColor: 'rgba(0,0,0,0.5)',
-        drawerStatusBarAnimation: 'slide'
+        drawerStatusBarAnimation: 'slide',
+        headerStyle: {
+          backgroundColor: '#FFFFFF',
+          elevation: 0,
+          shadowOpacity: 0
+        },
+        headerTintColor: '#000000',
+        headerTitleStyle: {
+          fontWeight: 'bold'
+        }
       }}
     >
       <Drawer.Screen name="Home" component={HomeScreen} />

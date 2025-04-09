@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import VerifiedIcon from '../../assets/verified.svg';
@@ -7,6 +7,7 @@ import CoinIcon from '../../assets/coin.svg';
 
 const SignupCompleteScreen = () => {
   const navigation = useNavigation();
+  const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
   const coinScale = useRef(new Animated.Value(0)).current;
   const coinOpacity = useRef(new Animated.Value(0)).current;
 
@@ -33,6 +34,10 @@ const SignupCompleteScreen = () => {
     navigation.navigate('Welcome');
   };
 
+  const toggleInfoModal = () => {
+    setIsInfoModalVisible(!isInfoModalVisible);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -56,10 +61,37 @@ const SignupCompleteScreen = () => {
           <Text style={styles.coinText}>30 coins</Text>
         </Animated.View>
 
+        <TouchableOpacity onPress={toggleInfoModal} style={styles.infoButton}>
+          <Text style={styles.infoButtonText}>What are coins?</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.continueButton} onPress={handleContinue} activeOpacity={0.8}>
           <Text style={styles.continueButtonText}>Continue</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <Modal
+        visible={isInfoModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={toggleInfoModal}
+      >
+        <View style={styles.drawerOverlay}>
+          <View style={styles.drawerContent}>
+            <Text style={styles.drawerTitle}>About Coins</Text>
+            <Text style={styles.drawerText}>
+              Coins are our in-app currency that you can use to:
+              {"\n\n"}- Access premium content
+              {"\n"}- Unlock special features
+              {"\n"}- Support your favorite creators
+              {"\n"}- Purchase virtual items
+            </Text>
+            <TouchableOpacity style={styles.closeButton} onPress={toggleInfoModal}>
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -81,6 +113,48 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#000000',
+  },
+  infoButton: {
+    marginBottom: 20,
+  },
+  infoButtonText: {
+    color: '#000000',
+    fontSize: 14,
+    textDecorationLine: 'underline',
+  },
+  drawerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  drawerContent: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  drawerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#000000',
+  },
+  drawerText: {
+    fontSize: 16,
+    color: '#444444',
+    lineHeight: 24,
+    marginBottom: 20,
+  },
+  closeButton: {
+    backgroundColor: '#000000',
+    paddingVertical: 12,
+    borderRadius: 25,
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   safeArea: {
     flex: 1,

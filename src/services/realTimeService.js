@@ -81,18 +81,40 @@ const showLocalNotification = async (title, body) => {
 
 // Handle incoming push notifications when app is in background
 messaging().setBackgroundMessageHandler(async (remoteMessage) => {
-  console.log('Background message:', remoteMessage);
-  
-  // Handle the notification based on the type
-  if (remoteMessage.data.type === 'new_blog') {
-    showLocalNotification(
-      'New Blog Post',
-      remoteMessage.data.title
-    );
-  } else if (remoteMessage.data.type === 'blog_update') {
-    showLocalNotification(
-      'Blog Updated',
-      remoteMessage.data.title
-    );
+  try {
+    console.log('Background message received:', remoteMessage);
+
+    if (!remoteMessage || !remoteMessage.data) {
+      console.warn('Invalid remote message format');
+      return;
+    }
+
+    const { type, title, body } = remoteMessage.data;
+
+    // Handle different notification types
+    switch (type) {
+      case 'new_blog':
+        await showLocalNotification('New Blog Post', title || 'New content available');
+        break;
+      case 'blog_update':
+        await showLocalNotification('Blog Updated', title || 'Content has been updated');
+        break;
+      case 'comment':
+        await showLocalNotification('New Comment', body || 'Someone commented on your post');
+        break;
+      default:
+        // Handle generic notifications
+        if (title) {
+          await showLocalNotification(title, body || 'New notification');
+        }
+    }
+
+    // Refresh data in background if needed
+    await setupFirestoreListeners();
+    
+    return Promise.resolve();
+  } catch (error) {
+    console.error('Error handling background message:', error);
+    return Promise.resolve(); // Ensure we don't crash the background handler
   }
 });
